@@ -31,7 +31,7 @@ jobs:
           prepare: |
             # curl is not in the FreeBSD base system and the test suite
             # needs it
-            pkg install -y git pcre2 curl p5-Test-Nginx msgpuck libyajl
+            pkg install -y git pcre2 curl p5-Test-Nginx msgpuck yajl
           run: |
             . .github/versions.env
             # On FreeBSD the ports tree installs under /usr/local, which
