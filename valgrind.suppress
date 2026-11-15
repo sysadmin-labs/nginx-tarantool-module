@@ -1,119 +1,39 @@
+# nginx allocates two things once and lets the process exit take them back,
+# so valgrind calls them lost.  Neither comes from this module: both traces
+# end in nginx's own code, and the module does not appear in either.
+#
+# Both entries are nginx's own and have nothing to do with which module
+# is built in; they are carried over from the other module repositories
+# here, where an empty file was shown to produce exactly these two and
+# nothing else.  Whether that still holds with this module in the binary
+# is what the valgrind workflow answers, and anything it reports beyond
+# these two is a finding to look at, not an entry to add.
+#
+# Note which cycle function they come through: Test::Nginx runs nginx with
+# master_process off, so everything here is the single-process path.  An
+# entry for the master's own path would never be reached from this suite
+# and so would be an entry nobody can check.
+#
+# If a later nginx brings a finding back, valgrind will say so with a full
+# trace.  Add it then, with a name and a reason, rather than keeping one
+# here on the chance that it is still needed.
+
 {
-<insert_a_suppression_name_here>
-Memcheck:Leak
-fun:malloc
-fun:ngx_alloc
-fun:ngx_create_pool
-fun:ngx_event_accept
-}
-{
-<insert_a_suppression_name_here>
-Memcheck:Leak
-fun:malloc
-fun:ngx_alloc
-fun:ngx_create_pool
-fun:ngx_http_init_request
-}
-{
-<insert_a_suppression_name_here>
-Memcheck:Leak
-fun:malloc
-fun:ngx_alloc
-fun:ngx_malloc
-fun:ngx_palloc
-}
-{
-<insert_a_suppression_name_here>
-Memcheck:Leak
-fun:malloc
-fun:ngx_alloc
-fun:ngx_malloc
-fun:ngx_pnalloc
-}
-{
-<insert_a_suppression_name_here>
-Memcheck:Leak
-fun:malloc
-fun:ngx_alloc
-fun:(below main)
-}
-{
-<insert_a_suppression_name_here>
-Memcheck:Param
-socketcall.sendmsg(msg.msg_iov[i])
-fun:sendmsg
-fun:ngx_write_channel
-fun:ngx_signal_worker_processes
-fun:ngx_master_process_cycle
-fun:main
-}
-{
-<insert_a_suppression_name_here>
-Memcheck:Param
-socketcall.sendmsg(msg.msg_iov[i])
-fun:__sendmsg_nocancel
-fun:ngx_write_channel
-fun:ngx_signal_worker_processes
-fun:ngx_master_process_cycle
-fun:main
-}
-{
-<insert_a_suppression_name_here>
-Memcheck:Param
-socketcall.sendmsg(msg.msg_iov[i])
-fun:__sendmsg_nocancel
-fun:ngx_write_channel
-fun:ngx_master_process_cycle
-fun:main
-}
-{
-<insert_a_suppression_name_here>
-Memcheck:Param
-socketcall.sendmsg(msg.msg_iov[i])
-fun:__sendmsg_nocancel
-fun:ngx_write_channel
-fun:ngx_pass_open_channel
-fun:ngx_start_worker_processes
-fun:ngx_master_process_cycle
-fun:main
-}
-{
-<insert_a_suppression_name_here>
-Memcheck:Param
-epoll_ctl(event)
-fun:epoll_ctl
-}
-{
-   <insert_a_suppression_name_here>
+   nginx keeps the environment array until the process ends
    Memcheck:Leak
+   match-leak-kinds: definite
    fun:malloc
    fun:ngx_alloc
-   fun:ngx_calloc
-   fun:ngx_event_process_init
+   fun:ngx_set_environment
+   ...
 }
+
 {
-   nginx-core-process-init
+   nginx keeps the connection and event arrays until the process ends
    Memcheck:Leak
+   match-leak-kinds: definite,indirect
    fun:malloc
    fun:ngx_alloc
    fun:ngx_event_process_init
-}
-{
-   nginx-core-crc32-init
-   Memcheck:Leak
-   fun:malloc
-   fun:ngx_alloc
-   fun:ngx_crc32_table_init
-   fun:main
-}
-{
-   <insert_a_suppression_name_here>
-   Memcheck:Cond
-   fun:index
-   fun:expand_dynamic_string_token
-   fun:_dl_map_object
-   fun:map_doit
-   fun:_dl_catch_error
-   fun:do_preload
-   fun:dl_main
+   ...
 }

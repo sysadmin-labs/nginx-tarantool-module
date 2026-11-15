@@ -1,85 +1,43 @@
 ngx_addon_name="ngx_http_tnt_module"
 
-libs="-lyajl -lmsgpuck"
+# yajl and msgpuck come from the system.  Upstream carried them as git
+# submodules and preferred the bundled static libraries when they happened
+# to be built; a release tarball never contains a submodule, so that path
+# was only ever taken by someone building from a full clone, and the
+# FreeBSD port has always linked the system libraries.  One way in, no
+# second one that behaves differently.
+ngx_feature="yajl and msgpuck"
+ngx_feature_name=
+ngx_feature_run=no
+ngx_feature_incs="#include <yajl/yajl_gen.h>
+#include <msgpuck.h>"
+ngx_feature_path=
+ngx_feature_libs="-lyajl -lmsgpuck"
+ngx_feature_test="yajl_gen g = yajl_gen_alloc(NULL); (void) g;"
+. auto/feature
 
-include_paths=" \
-          $ngx_addon_dir/src                                       \
-          $ngx_addon_dir/third_party                               \
-          "
-
-test -f $ngx_addon_dir/third_party/yajl/build/yajl-2.1.0/lib/libyajl_s.a &&
-test -f $ngx_addon_dir/third_party/msgpuck/libmsgpuck.a && {
-  libs="                                                                \
-      $ngx_addon_dir/third_party/yajl/build/yajl-2.1.0/lib/libyajl_s.a  \
-      $ngx_addon_dir/third_party/msgpuck/libmsgpuck.a                   \
-      "
-
-  include_paths="${include_paths} \
-          $ngx_addon_dir/third_party/msgpuck                       \
-          $ngx_addon_dir/third_party/yajl/build/yajl-2.1.0/include \
-          "
-}
-
-module_src_dir="$ngx_addon_dir/src"
-
-sources=" \
-          $module_src_dir/json_encoders.c         \
-          $module_src_dir/tp_transcode.c          \
-          $module_src_dir/ngx_http_tnt_module.c   \
-          "
-
-headers=" \
-          $module_src_dir/debug.h                 \
-          $module_src_dir/tp_ext.h                \
-          $module_src_dir/json_encoders.h         \
-          $module_src_dir/tp_transcode.h          \
-          "
-
-old_style_build=yes
-if test -n "$ngx_module_link"; then
-  old_style_build=no
+if [ $ngx_found = no ]; then
+	cat << END
+$0: error: the tarantool module requires the yajl and msgpuck libraries.
+END
+	exit 1
 fi
 
-#
-# Old-style build [[
-if test "$old_style_build" = "yes"; then
+ngx_module_type=HTTP
+ngx_module_name=$ngx_addon_name
+ngx_module_incs="$ngx_addon_dir/src"
+ngx_module_deps=" \
+	$ngx_addon_dir/src/debug.h \
+	$ngx_addon_dir/src/tp.h \
+	$ngx_addon_dir/src/tp_ext.h \
+	$ngx_addon_dir/src/json_encoders.h \
+	$ngx_addon_dir/src/tp_transcode.h \
+	"
+ngx_module_srcs=" \
+	$ngx_addon_dir/src/json_encoders.c \
+	$ngx_addon_dir/src/tp_transcode.c \
+	$ngx_addon_dir/src/ngx_http_tnt_module.c \
+	"
+ngx_module_libs="$ngx_feature_libs"
 
-  CORE_INCS=" \
-          $CORE_INCS        \
-          $ngx_feature_path \
-          "
-
-  CORE_LIBS=" \
-          $CORE_LIBS        \
-          $ngx_feature_libs \
-          $libs           \
-          "
-
-  HTTP_MODULES=" \
-          $HTTP_MODULES   \
-          $ngx_addon_name \
-          "
-
-  NGX_ADDON_SRCS=" \
-          $NGX_ADDON_SRCS \
-          $sources      \
-          "
-
-  for path in $include_paths; do
-    CFLAGS="$CFLAGS -I$path"
-  done
-# ]]
-
-# New-style build [[
-else
-
-  ngx_module_type=HTTP
-  ngx_module_name=$ngx_addon_name
-  ngx_module_incs=$include_paths
-  ngx_module_deps=$headers
-  ngx_module_srcs=$sources
-  ngx_module_libs=$libs
-  . auto/module
-
-# ]]
-fi
+. auto/module

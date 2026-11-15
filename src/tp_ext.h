@@ -38,7 +38,7 @@
 #   define TP_H_AUTH_OFF 1
 #endif // TP_H_AUTH_OFF
 
-#include <tp.h> /* third_party/tp.h */
+#include <tp.h>
 
 #define unlikely mp_unlikely
 #define likely mp_likely
