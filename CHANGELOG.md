@@ -1,10 +1,10 @@
 # Changelog
 
-## Unreleased
+## 2.8.0
 
-First release from this repository. It continues Tarantool's module, whose
-history is intact here; their repository has had no commit since March
-2021.
+First release from this repository, carrying on from upstream's v2.7.1. It
+continues Tarantool's module, whose history is intact here; their
+repository has had no commit since March 2021.
 
 ### Changed
 
