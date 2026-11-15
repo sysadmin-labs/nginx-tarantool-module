@@ -25,30 +25,6 @@ expose it as a REST or JSON-RPC endpoint. nginx translates between JSON on
 the HTTP side and msgpack on the database side, so a stored procedure can
 be called without a layer in between.
 
-## Where this comes from
-
-Tarantool's own module, continued here with its history intact. Their
-repository has had no commit since March 2021, carries 29 open issues, and
-the FreeBSD port builds from it.
-
-**Changed here:** yajl and msgpuck come from the system, always. Upstream
-carried both as git submodules and preferred the bundled static libraries
-whenever they happened to be built — but a release tarball never contains a
-submodule, so that path was only ever taken by someone building from a full
-clone, while every distribution, the FreeBSD port included, linked the
-system libraries. The submodules are gone and there is one way in rather
-than two that behave differently.
-
-**Also changed:** three one-bit bit-fields are unsigned now. Declared as
-`ngx_int_t` they could not hold the 1 assigned to them, it became -1, and
-clang refuses that under `-Werror` -- so the module did not build on
-FreeBSD at all. Every read is a truth test, so nothing behaved
-differently; a later `== 1` would have.
-
-What is new besides that is the scaffolding: a build against the releases the ports ship, the
-sanitizers, valgrind, CodeQL and a FreeBSD run. There is no reload gate
-yet, and `ci/README.md` says why.
-
 ## Requirements
 
 nginx 1.28 or newer, libyajl and msgpuck.
@@ -97,8 +73,10 @@ so `GET /api/myfunc` calls `myfunc`.
 
 ## Directives
 
-The full set is in upstream's reference, kept as `README.md` history and
-in the module's own documentation. The ones that decide the shape:
+27 of them, read out of the module's own command tables, so this is the
+whole set and the contexts are the ones the code enforces.
+
+The ones that decide the shape of a setup:
 
 |Directive|What it decides|
 |---|---|
@@ -109,10 +87,44 @@ in the module's own documentation. The ones that decide the shape:
 |`tnt_pass_http_request`|what of the request is handed over: `parse_args`, `parse_urlencoded`, `pass_body`, `pass_headers_out`, `pass_subrequest_uri`|
 |`tnt_allowed_spaces`, `tnt_allowed_indexes`|the spaces and indexes a client may name|
 |`tnt_multireturn_skip_count`|how much of a multi-value return to drop|
-|`tnt_buffer_size`, `tnt_in_multiplier`, `tnt_out_multiplier`|the buffers the transcoder works in|
 
 `tnt_allowed_spaces` and `tnt_allowed_indexes` are worth setting whenever
-a client can name a space itself.
+a client can name a space itself. The `tnt_select`, `tnt_insert`,
+`tnt_update`, `tnt_replace`, `tnt_upsert` and `tnt_delete` directives map
+a location onto one database operation directly, without a stored
+procedure in between.
+
+And all of them:
+
+|Directive|Context|Takes|
+|---|---|---|
+|`tnt_allowed_indexes`|server, location|1 argument|
+|`tnt_allowed_spaces`|server, location|1 argument|
+|`tnt_buffer_size`|http, server, location|1 argument|
+|`tnt_connect_timeout`|http, server, location|1 argument|
+|`tnt_delete`|location, if|3 arguments|
+|`tnt_http_methods`|http, server, location|1 or more arguments|
+|`tnt_http_rest_methods`|http, server, location|1 or more arguments|
+|`tnt_in_multiplier`|http, server, location|1 argument|
+|`tnt_insert`|location, if|2 arguments|
+|`tnt_method`|location, if|1 argument|
+|`tnt_multireturn_skip_count`|http, server, location|1 argument|
+|`tnt_next_upstream`|http, server, location|1 or more arguments|
+|`tnt_next_upstream_timeout`|http, server, location|1 argument|
+|`tnt_next_upstream_tries`|http, server, location|1 argument|
+|`tnt_out_multiplier`|http, server, location|1 argument|
+|`tnt_pass`|location, if|1 argument|
+|`tnt_pass_http_request`|http, server, location, if|1 or more arguments|
+|`tnt_pass_http_request_buffer_size`|http, server, location|1 argument|
+|`tnt_pure_result`|http, server, location|1 argument|
+|`tnt_read_timeout`|http, server, location|1 argument|
+|`tnt_replace`|location, if|2 arguments|
+|`tnt_select`|location, if|6 arguments|
+|`tnt_select_limit_max`|server, location|1 argument|
+|`tnt_send_timeout`|http, server, location|1 argument|
+|`tnt_set_header`|http, server, location|2 arguments|
+|`tnt_update`|location, if|3 arguments|
+|`tnt_upsert`|location, if|3 arguments|
 
 ## Testing
 
