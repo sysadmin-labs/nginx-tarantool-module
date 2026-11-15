@@ -39,8 +39,13 @@ clone, while every distribution, the FreeBSD port included, linked the
 system libraries. The submodules are gone and there is one way in rather
 than two that behave differently.
 
-Nothing else in the module itself needed changing so far. What is new is
-the scaffolding: a build against the releases the ports ship, the
+**Also changed:** three one-bit bit-fields are unsigned now. Declared as
+`ngx_int_t` they could not hold the 1 assigned to them, it became -1, and
+clang refuses that under `-Werror` -- so the module did not build on
+FreeBSD at all. Every read is a truth test, so nothing behaved
+differently; a later `== 1` would have.
+
+What is new besides that is the scaffolding: a build against the releases the ports ship, the
 sanitizers, valgrind, CodeQL and a FreeBSD run. There is no reload gate
 yet, and `ci/README.md` says why.
 

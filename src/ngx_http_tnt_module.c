@@ -85,8 +85,15 @@ typedef struct ngx_http_tnt_format_value {
     ngx_str_t       name;
     ngx_str_t       value;
     enum tp_type    type;
-    ngx_int_t       update_key:1;
-    ngx_int_t       upsert_op:1;
+    /*
+     * Unsigned, because a one-bit signed bit-field cannot hold 1: the
+     * assignments below store 1 and it becomes -1, which clang refuses
+     * under -Werror.  Every read is a truth test, so the module behaved
+     * the same either way -- but a later "== 1" would not have, and the
+     * field now means what it says.
+     */
+    ngx_uint_t      update_key:1;
+    ngx_uint_t      upsert_op:1;
 } ngx_http_tnt_format_value_t;
 
 
@@ -250,8 +257,9 @@ typedef struct ngx_http_tnt_ctx {
     int                rest_batch_size, batch_size;
 
     /** The "Greeting" from the Tarantool
+     *  Unsigned for the same reason as the format-value flags above.
      */
-    ngx_int_t          greeting:1;
+    ngx_uint_t         greeting:1;
 
     /** The preset method and its length
      */

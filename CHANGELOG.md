@@ -22,6 +22,12 @@ history is intact here; their repository has had no commit since March
 - Dockerfile, docker-compose.yml, the top-level Makefile and the two
   example nginx.conf files are gone.
 
+- Three one-bit bit-fields are unsigned now. As `ngx_int_t` they could
+  not hold the 1 that was assigned to them -- it became -1 -- which clang
+  refuses under `-Werror` and which is why the module did not build on
+  FreeBSD at all. Every read is a truth test, so the behaviour was the
+  same either way; a later `== 1` would not have been.
+
 ### Added
 
 - Continuous integration against nginx 1.28, 1.30 and 1.31, statically and
