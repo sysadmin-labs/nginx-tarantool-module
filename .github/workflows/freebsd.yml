@@ -34,6 +34,11 @@ jobs:
             pkg install -y git pcre2 curl p5-Test-Nginx msgpuck libyajl
           run: |
             . .github/versions.env
+            # On FreeBSD the ports tree installs under /usr/local, which
+            # nginx's configure does not look in by itself, so its feature
+            # test for the library fails before anything is compiled.
+            export CI_CC_OPT="-I/usr/local/include"
+            export CI_LD_OPT="-L/usr/local/lib"
             ci/build.sh "$NGINX_VERSION" "$HOME/nginx"
             # the job runs as root, and Test::Nginx then writes "user
             # root;" into its configuration.  root has no group of that
