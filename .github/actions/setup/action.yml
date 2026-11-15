@@ -23,7 +23,11 @@ runs:
         EXTRA_PACKAGES: ${{ inputs.packages }}
         WANT_TEST_NGINX: ${{ inputs.test-nginx }}
       run: |
-        packages="libpcre2-dev zlib1g-dev libssl-dev $EXTRA_PACKAGES"
+        # What this module itself links against.  Deliberately not an
+        # input: a job that asks for valgrind would otherwise replace it
+        # and the build would fail on a missing header.
+        module_packages='libyajl-dev'
+        packages="libpcre2-dev zlib1g-dev libssl-dev $module_packages $EXTRA_PACKAGES"
         if [ "$WANT_TEST_NGINX" = true ]; then
           packages="$packages cpanminus"
         fi

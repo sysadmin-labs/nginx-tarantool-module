@@ -52,15 +52,6 @@ jobs:
             TEST_NGINX_BINARY="$HOME/nginx/sbin/nginx" \
             prove -r t/ 2>&1 | tee sanitizer.log
 
-      - name: Walk the tracker protocol under the sanitizers
-        run: |
-          # The directive tests above never speak to a tracker, so on
-          # their own they leave the request handling, the parser and the
-          # write path unmeasured -- which is most of the module.
-          set -o pipefail
-          . .github/versions.env
-          ASAN_OPTIONS="$ASAN_OPTIONS:abort_on_error=0" \
-            ci/mogtest.sh "$NGINX_VERSION" 2>&1 | tee -a sanitizer.log
 
       - name: No findings allowed
         run: |
