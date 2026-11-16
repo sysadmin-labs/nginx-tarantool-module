@@ -47,6 +47,20 @@ jobs:
           # shellcheck disable=SC2086
           shellcheck --severity=warning --shell=sh $files
 
+  version:
+    name: reported version
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # The version this module reports to the outside is a generated file
+      # that upstream left behind, and it had gone stale.  Nothing fails
+      # when it does, so it needs a gate of its own.
+      - name: The version in the sources matches CHANGELOG.md
+        run: ci/version.sh
+
   workflows:
     name: workflow definitions
     runs-on: ubuntu-latest

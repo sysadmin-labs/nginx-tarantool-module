@@ -34,6 +34,11 @@
 #ifndef NGX_HTTP_TNT_VERSION_H
 #define NGX_HTTP_TNT_VERSION_H 1
 
-#define NGX_HTTP_TNT_MODULE_VERSION_STRING "v2.7.2"
+/*
+ * Kept in step with CHANGELOG.md by ci/version.sh, which the lint
+ * workflow runs.  It is written to the error log at every configuration
+ * pass, so a stale one is what anybody reading that log believes.
+ */
+#define NGX_HTTP_TNT_MODULE_VERSION_STRING "v2.8.1"
 
 #endif
