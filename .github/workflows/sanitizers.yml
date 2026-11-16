@@ -23,12 +23,21 @@ jobs:
       # nginx runs the little programs its configure compiles.  With leak
       # detection on, each of them reports at exit and returns non-zero,
       # and every feature probe comes out "found but is not working".
-      ASAN_OPTIONS: detect_leaks=0
+      # log_path, because nginx redirects stderr onto its error log
+      # file and a report on stderr would be lost there; see the
+      # findings step below.
+      ASAN_OPTIONS: detect_leaks=0:log_path=${{ github.workspace }}/sanlog/asan
       # The suppression file names one finding in nginx's own startup
       # path and says why; see ci/ubsan.suppress.  The path has to be
       # absolute, the suite runs nginx from a directory of its own.
-      UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=0:suppressions=${{ github.workspace }}/ci/ubsan.suppress
-      CI_CC_OPT: '-fsanitize=address,undefined -fno-omit-frame-pointer -g -O1'
+      UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=0:suppressions=${{ github.workspace }}/ci/ubsan.suppress:log_path=${{ github.workspace }}/sanlog/ubsan
+      # -DNGX_DEBUG_PALLOC=1 is what makes this run able to see the
+      # thing it is for.  Without it ngx_palloc and ngx_pnalloc hand
+      # out slices of a pool block, so a write one byte past an
+      # allocation lands inside a block ASan handed over whole and no
+      # report is made; nginx keeps a switch for exactly this and sends
+      # every allocation straight to malloc when it is set.
+      CI_CC_OPT: '-fsanitize=address,undefined -fno-omit-frame-pointer -g -O1 -DNGX_DEBUG_PALLOC=1'
       CI_LD_OPT: '-fsanitize=address,undefined'
 
     steps:
@@ -47,6 +56,7 @@ jobs:
       - name: Run the test suite under the sanitizers
         run: |
           set -o pipefail
+          mkdir -p sanlog
           ASAN_OPTIONS="$ASAN_OPTIONS:abort_on_error=0" \
             TEST_NGINX_NO_SHUFFLE=1 \
             TEST_NGINX_BINARY="$HOME/nginx/sbin/nginx" \
@@ -55,7 +65,28 @@ jobs:
 
       - name: No findings allowed
         run: |
+          # The sanitizers write to log_path, not to stderr.  nginx
+          # redirects its own stderr onto the error log file as soon as
+          # error_log names one (ngx_log_redirect_stderr), and Test::Nginx
+          # always names one, so a grep over the suite's stdout saw ASan
+          # only indirectly -- through the worker dying -- and missed every
+          # UBSan report outright: halt_on_error=0 keeps the process
+          # alive, and "runtime error:" carries none of the [alert],
+          # [crit] or [emerg] that Test::Nginx looks for.  With log_path
+          # the reports land in files of their own, and a sanitizer
+          # creates such a file only when it has something to say, so the
+          # existence of one is the finding.
+          found=0
           if grep -nE "AddressSanitizer|runtime error:|LeakSanitizer" sanitizer.log; then
+            found=1
+          fi
+          for f in sanlog/*; do
+            [ -e "$f" ] || continue
+            echo "--- $f ---"
+            cat "$f"
+            found=1
+          done
+          if [ "$found" != 0 ]; then
             echo "a sanitizer reported the lines above" >&2
             exit 1
           fi
