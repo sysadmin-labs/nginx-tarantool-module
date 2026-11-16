@@ -132,7 +132,13 @@ And all of them:
 ci/msgpuck.sh                       # where msgpuck has no package
 ci/build.sh 1.30.6 /tmp/nginx-test
 TEST_NGINX_BINARY=/tmp/nginx-test/sbin/nginx prove -r t/
+ci/version.sh
 ```
+
+`ci/version.sh` holds the version in `src/ngx_http_tnt_version.h` against
+`CHANGELOG.md`. The module writes that value to the error log at every
+configuration pass, and it had frozen at the release before this one when
+the generator that produced the file went away.
 
 The suite does not talk to a database: Tarantool's protocol is msgpack over
 a binary channel, and a stand-in has to be written before that can be
